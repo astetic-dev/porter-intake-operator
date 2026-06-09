@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/milestone-card/v1.json",
+  "title": "Milestone Card v1",
+  "description": "One JSON per project milestone. A milestone is a moment in time, not a thing produced — it is binary (reached or not) and often used to gate a phase, a payment, or a go/no-go decision. Tracks the planned target against a baseline so schedule variance stays visible. Deliverables and action-cards hang underneath it. Lives in <project>/milestones/.",
+  "type": "object",
+  "required": ["schema_version", "id", "project_id", "name", "target_date", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^MS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{3}$",
+      "description": "Format: MS-{customer_code}-{project_code}-{NNN}. Example: MS-ACME-CLOUD-001."
+    },
+    "project_id": {"type": "string", "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$"},
+    "name": {"type": "string", "minLength": 3, "maxLength": 200, "description": "Milestone name, phrased as a reached state: 'OrderHub live on Northwind', 'Contract signed'."},
+    "description": {"type": ["string", "null"]},
+    "target_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Current planned date."},
+    "baseline_date": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Originally baselined date. Keep it fixed when the plan was set — the gap between baseline_date and target_date IS the schedule slip, and you lose the ability to see slip if you overwrite it."},
+    "actual_date": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date the milestone was actually reached. Set when status=met."},
+    "status": {
+      "type": "string",
+      "enum": ["planned", "at-risk", "met", "missed", "cancelled"],
+      "description": "planned=on track; at-risk=in danger of slipping; met=reached (set actual_date); missed=target_date passed without being reached; cancelled=no longer applicable."
+    },
+    "gate": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is this a gating milestone — a go/no-go, a payment trigger, or a phase boundary that downstream work depends on? Gating milestones get surfaced more prominently."
+    },
+    "gate_criteria": {
+      "type": ["array", "null"],
+      "items": {"type": "string"},
+      "description": "What must be objectively true to consider this milestone reached. Most relevant for gating milestones."
+    },
+    "owner": {
+      "type": ["object", "null"],
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {"party": {"type": "string"}, "person": {"type": ["string", "null"]}, "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}}
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^DLV-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{3}$"},
+      "default": [],
+      "description": "Deliverable-card ids whose acceptance this milestone marks."
+    },
+    "action_cards": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": [],
+      "description": "Action-cards that must complete for this milestone to be reached."
+    },
+    "issues": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^ISS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}$"},
+      "default": [],
+      "description": "Issue-card ids that threaten this milestone — the milestone → issue → action chain (the issues' own action_cards[] carry the work)."
+    },
+    "updated": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date this card was last touched."},
+    "tags": {"type": "array", "items": {"type": "string"}, "default": []}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "met"}}, "required": ["status"]},
+      "then": {"required": ["actual_date"], "properties": {"actual_date": {"type": "string"}}}
+    }
+  ]
+}

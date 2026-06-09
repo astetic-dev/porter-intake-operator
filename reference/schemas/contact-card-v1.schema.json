@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/contact-card/v1.json",
+  "title": "Contact Card v1 (shared)",
+  "description": "One JSON per person, stored centrally in _contacts/. Project-cards and meeting-cards reference a contact by id rather than copying contact details, so a change of role or departure happens in exactly one place. Shared with the meeting-coach companion.",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "organization", "active"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$",
+      "description": "Format: CONTACT-{org_code}-{name-slug}. Slug = lowercase, dashes, no diacritics. Examples: CONTACT-ACME-mark-thompson, CONTACT-INTERNAL-sarah-chen."
+    },
+    "name": {"type": "string", "minLength": 1},
+    "organization": {
+      "type": "object",
+      "required": ["code", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {"type": "string", "description": "Org code, e.g. a customer code (ACME), a vendor code (STOWLINE), or a generic bucket (INTERNAL, THIRDPARTY)."},
+        "name": {"type": "string"}
+      }
+    },
+    "role":  {"type": ["string", "null"], "description": "Free-text role description."},
+    "title": {"type": ["string", "null"], "description": "Formal job title if different from role."},
+    "contact": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "email": {"type": ["string", "null"]},
+        "phone": {"type": ["string", "null"]},
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "kind":  {"type": "string", "description": "e.g. 'mobile', 'email-private', 'teams'."},
+              "value": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "active": {"type": "boolean", "description": "true = still an active contact; false = departed / no longer relevant."},
+    "since": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "departed_at": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Departure date; only relevant when active=false. Cards are never deleted — a departed contact stays referencable from historical cards."},
+    "involved_in": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$"},
+      "description": "Project-card ids this person is/was involved in."
+    },
+    "notes": {"type": ["string", "null"], "description": "Short free note / working scratchpad."},
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

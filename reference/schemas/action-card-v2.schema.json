@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/action-card/v2.json",
+  "title": "Action Card v2",
+  "description": "One actionable unit of work. Structured data lives in {id}.json; the narrative body in {id}.md; the activity history in {id}.log.jsonl. Action-cards are the operational heartbeat of a project: every commitment, decision, blocker, or thing-to-watch becomes a card so nothing lives only in your head or your inbox.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "status",
+    "type",
+    "priority",
+    "project",
+    "assignee",
+    "reporter",
+    "deadline",
+    "created",
+    "updated"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Schema version. v2 stores structured data in JSON plus a .md body sidecar and a .log.jsonl activity log."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$",
+      "description": "Format: {user_code}-{customer_code}-{project_code}-{nnnn}[suffix]. Example: AB-ACME-CLOUD-0007 or AB-ACME-CLOUD-0007A. The {customer_code}-{project_code} portion matches the linked project-card id. The filename must equal this id."
+    },
+    "legacy_id": {
+      "type": ["string", "null"],
+      "description": "Optional: an older identifier carried over during a migration."
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "One line. What needs to happen, stated as an outcome."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["TODO", "DOING", "WAIT", "PLAN", "BLOCKED", "DONE", "CANCELLED"],
+      "description": "Set by hand by the owner. TODO=not started, DOING=actively working, WAIT=waiting on an external party, PLAN=scheduled but not started, BLOCKED=cannot start due to an external blocker, DONE=finished, CANCELLED=deliberately stopped. LATE and URGENT are separate auto-flags, not statuses."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["task", "decision", "monitoring", "blocker"],
+      "description": "Kind of work. task=do it; decision=a decision that still needs DRIVING (the outcome, once made, is recorded as a separate decision-card that links back via its resolves_action_card — closing the decision here means creating that card and moving this to DONE); monitoring=keep watching it; blocker=it is holding others up."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low", "none"],
+      "description": "Importance. 'none' = not yet triaged / trivial."
+    },
+    "late": {
+      "type": "boolean",
+      "default": false,
+      "description": "AUTO-set by rebuild-index: true if deadline.date < today AND status NOT in {DONE, CANCELLED}. Do not set by hand."
+    },
+    "urgent": {
+      "type": "boolean",
+      "default": false,
+      "description": "AUTO-set by rebuild-index: true if priority='high' OR (late=true AND priority='medium'). Override via urgent_override."
+    },
+    "urgent_override": {
+      "type": ["boolean", "null"],
+      "default": null,
+      "description": "Manual override: true forces urgent on regardless of the rule; false forces it off; null = use the rule."
+    },
+    "project": {
+      "type": "object",
+      "required": ["user_code", "customer_code", "project_code", "full_name"],
+      "additionalProperties": false,
+      "properties": {
+        "user_code": {"type": "string", "minLength": 2, "maxLength": 4, "description": "Your initials or handle. In a solo setup this is constant; in a team it scopes cards to a person."},
+        "customer_code": {"type": "string", "minLength": 2, "maxLength": 10},
+        "project_code": {"type": "string", "minLength": 2, "maxLength": 7},
+        "full_name": {"type": "string", "description": "Human-readable project name."}
+      }
+    },
+    "assignee": {
+      "type": "object",
+      "description": "Who executes the work.",
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {
+        "party": {"type": "string", "description": "Side responsible, e.g. 'me', 'customer', 'vendor', or an org code."},
+        "person": {"type": ["string", "null"]},
+        "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$", "description": "Optional reference to a contact-card — same person-object shape as the other card types."}
+      }
+    },
+    "reporter": {
+      "type": "object",
+      "description": "Who raised or requested the action.",
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {
+        "party": {"type": "string"},
+        "person": {"type": ["string", "null"]},
+        "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}
+      }
+    },
+    "deadline": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO YYYY-MM-DD, or null when there is no hard date."
+        },
+        "text": {"type": "string", "description": "Free text deadline, e.g. 'asap', 'before go-live', 'ongoing'. Always filled, even when date is null."}
+      }
+    },
+    "created": {"type": "string", "format": "date-time"},
+    "updated": {"type": "string", "format": "date-time"},
+    "parent_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": [],
+      "description": "Cards that must complete before this one can proceed."
+    },
+    "blocks": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": [],
+      "description": "Cards that this one is holding up."
+    },
+    "relates_to": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": []
+    },
+    "supersedes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": [],
+      "description": "Cards replaced by this one (e.g. after a merge)."
+    },
+    "split_from": {
+      "type": ["string", "null"],
+      "description": "Source card this one was split off from (e.g. 0007A out of 0007)."
+    },
+    "split_into": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": [],
+      "description": "Cards this one was split into (only on a split-aggregate card)."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "ref"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {"type": "string", "enum": ["file", "url", "issue", "doc", "email", "meeting", "risk", "decision", "milestone", "deliverable"]},
+          "ref": {"type": "string", "description": "Path, URL, or identifier (including an in-workspace card id)."},
+          "note": {"type": "string", "description": "Optional note (line/section, date, etc.)."}
+        }
+      },
+      "default": [],
+      "description": "Where this card came from / what it serves. 'issue'/'risk'/'decision'/'milestone'/'deliverable' = the id of an in-workspace card of that type (this is how an action-card points back at the register card that spawned it); 'meeting' = a meeting-card id; 'doc' = your wiki (Confluence/Notion); 'url'/'file' = external."
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": [],
+      "description": "Objective criteria for 'done'."
+    },
+    "latest_update": {
+      "type": ["object", "null"],
+      "default": null,
+      "description": "A one-glance summary of the most recent substantial change to this card. Rendered prominently at the top of the card detail in the dashboard, so you can see what last happened without opening the source tracker. REPLACE on each update (the .log.jsonl keeps the running history). May be omitted on DONE/CANCELLED cards.",
+      "required": ["date", "by", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+        "by": {"type": "string", "description": "Who/what produced the update, e.g. 'Jane (issue PROJ-123)'."},
+        "summary": {"type": "string", "description": "Short markdown (bullets allowed), 3-8 lines. Keep it scannable."}
+      }
+    },
+    "body_file": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Relative path to the markdown body sidecar; defaults to {id}.md next to this JSON."
+    },
+    "log_file": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Relative path to the activity log; defaults to {id}.log.jsonl next to this JSON."
+    }
+  }
+}

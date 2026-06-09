@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/risk-card/v1.json",
+  "title": "Risk Card v1",
+  "description": "One JSON per project risk. A standalone risk register entry, grounded in the PMI Practice Standard for Project Risk Management and ISO 31000: a risk is assessed (probability x impact), given a response strategy and an owner, and worked down through mitigation action-cards. Use risk-cards when a project needs real risk management; the project-card's inline risks[] remains the lightweight option for small projects. Lives in <project>/risks/.",
+  "type": "object",
+  "required": ["schema_version", "id", "project_id", "title", "description", "probability", "impact", "response", "status", "owner", "raised"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^RISK-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{3}$",
+      "description": "Format: RISK-{customer_code}-{project_code}-{NNN}. Example: RISK-ACME-CLOUD-001."
+    },
+    "project_id": {"type": "string", "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$"},
+    "title": {"type": "string", "minLength": 3, "maxLength": 200, "description": "Short risk name. Prefer a cause-effect phrasing: 'Vendor sign-off slips, delaying first cutover'."},
+    "description": {"type": "string", "minLength": 10, "description": "The risk in full: the uncertain event and its effect on a project objective."},
+    "risk_type": {
+      "type": "string",
+      "enum": ["threat", "opportunity"],
+      "default": "threat",
+      "description": "A threat is a negative uncertainty; an opportunity is a positive one. Determines how to read the response enum (see response)."
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": ["schedule", "cost", "scope", "technical", "resource", "external", "quality", "security", "other", null],
+      "description": "Risk breakdown category."
+    },
+    "probability": {
+      "type": "string",
+      "enum": ["very-low", "low", "medium", "high", "very-high"],
+      "description": "Likelihood the risk materializes."
+    },
+    "impact": {
+      "type": "string",
+      "enum": ["very-low", "low", "medium", "high", "very-high"],
+      "description": "Severity of effect on project objectives if it materializes."
+    },
+    "score": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 25,
+      "description": "DERIVED: P x I on a 1-5 x 1-5 matrix (very-low=1 .. very-high=5), so score should equal the product of the probability and impact levels. Lets you rank the register. Treat as computed from probability/impact, not an independent input — if it contradicts them, the levels win."
+    },
+    "response": {
+      "type": "string",
+      "enum": ["avoid", "mitigate", "transfer", "accept", "escalate", "exploit", "enhance", "share"],
+      "description": "Response strategy. THREATS (PMI): avoid=remove the cause; mitigate=reduce P or I; transfer=shift to a third party (insurance, contract); accept=live with it; escalate=outside project authority. OPPORTUNITIES (risk_type=opportunity): exploit=make it certain; enhance=increase P or I; share=partner to capture it; accept/escalate as above."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "mitigating", "accepted", "realized", "closed"],
+      "description": "open=identified, not yet being worked; mitigating=response in progress; accepted=consciously living with it; realized=it happened (it is now an issue — consider an issue-card); closed=no longer relevant or fully mitigated."
+    },
+    "owner": {
+      "type": "object",
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {
+        "party": {"type": "string"},
+        "person": {"type": ["string", "null"]},
+        "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}
+      },
+      "description": "Single accountable owner for managing this risk."
+    },
+    "mitigation": {"type": ["string", "null"], "description": "Summary of the response plan. The concrete steps live as mitigation_action_cards."},
+    "mitigation_action_cards": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "description": "Action-card ids that carry out the response. This is how a risk turns into worked-down work."
+    },
+    "trigger": {"type": ["string", "null"], "description": "Early-warning sign that the risk is materializing."},
+    "residual": {"type": ["string", "null"], "description": "Residual risk expected to remain after the planned response."},
+    "raised": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "last_reviewed": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "review_due": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "When this risk should next be re-assessed. A risk nobody has reviewed in months is a register going stale."},
+    "realized_as_issue": {"type": ["string", "null"], "pattern": "^ISS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}$", "description": "If status=realized: the issue-card it became."},
+    "updated": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date this card was last touched. Lets tooling sort 'recently changed' across card types."},
+    "relates_to": {"type": "array", "items": {"type": "string"}, "default": []},
+    "tags": {"type": "array", "items": {"type": "string"}, "default": []}
+  }
+}

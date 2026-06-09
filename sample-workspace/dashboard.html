@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Porter - dashboard</title>
+<style>
+  :root { --accent: #2f6f9f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         background: #f4f6f8; color: #1f2430; font-size: 14px; line-height: 1.5; }
+  header { background: var(--accent); color: #fff; padding: 18px 28px; }
+  header h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: .02em; }
+  header .meta { opacity: .85; font-size: 12px; margin-top: 3px; }
+  .stats { display: flex; gap: 10px; padding: 14px 28px 0; flex-wrap: wrap; }
+  .stat { background: #fff; border: 1px solid #e0e5ea; border-radius: 8px; padding: 8px 14px; }
+  .stat b { font-size: 18px; display: block; }
+  .stat.urgent b { color: #c0392b; }
+  .stat.late b { color: #d68910; }
+  .stat span { font-size: 11px; color: #6b7480; text-transform: uppercase; letter-spacing: .04em; }
+  nav { display: flex; gap: 4px; padding: 16px 28px 0; border-bottom: 1px solid #e0e5ea; }
+  nav button { border: none; background: none; padding: 10px 18px; font-size: 14px; cursor: pointer;
+               color: #6b7480; border-bottom: 3px solid transparent; font-weight: 600; }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  main { padding: 22px 28px 60px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  h3.proj { margin: 22px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #6b7480; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e0e5ea; border-radius: 8px; overflow: hidden; }
+  th { background: #eef1f4; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase;
+       letter-spacing: .04em; color: #6b7480; }
+  td { padding: 9px 10px; border-top: 1px solid #eef1f4; vertical-align: top; }
+  td.bd { white-space: nowrap; }
+  .cid { font-family: Consolas, monospace; font-size: 11px; color: #8a94a0; }
+  .upd { color: #4a5360; font-size: 13px; max-width: 360px; }
+  .row-urgent td { background: #fdf3f2; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+           padding: 2px 6px; border-radius: 4px; margin-right: 3px; }
+  .badge.urgent { background: #c0392b; color: #fff; }
+  .badge.late { background: #d68910; color: #fff; }
+  .gap { color: #c0392b; font-weight: 600; }
+  .day { margin-bottom: 20px; }
+  .dayhdr { font-weight: 700; color: var(--accent); border-bottom: 2px solid #e0e5ea; padding-bottom: 4px; margin-bottom: 8px; }
+  .msg { background: #fff; border: 1px solid #e0e5ea; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+  .msgtop { display: flex; justify-content: space-between; align-items: center; }
+  .sender { font-weight: 600; }
+  .tag { font-size: 10px; background: #eef1f4; color: #6b7480; padding: 2px 8px; border-radius: 10px;
+         text-transform: uppercase; letter-spacing: .04em; }
+  .subj { color: #2b3340; margin-top: 2px; }
+  .sum { color: #6b7480; font-size: 13px; margin-top: 2px; }
+  .noise { color: #aab2bd; font-size: 12px; font-style: italic; margin: 4px 0 0 2px; }
+  .empty { color: #8a94a0; padding: 30px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Porter - inbox dashboard</h1>
+  <div class="meta">Generated 2026-06-09 01:09 &middot; cards are the source of truth, this view is rebuilt each run</div>
+</header>
+<div class="stats">
+  <div class="stat"><b>6</b><span>open actions</span></div>
+  <div class="stat urgent"><b>4</b><span>urgent</span></div>
+  <div class="stat late"><b>1</b><span>late</span></div>
+  <div class="stat"><b>4</b><span>to read</span></div>
+</div>
+<nav>
+  <button id="t1" class="active" onclick="show(1)">Open actions</button>
+  <button id="t2" onclick="show(2)">To read, per day</button>
+</nav>
+<main>
+  <div id="tab1" class="tab active">
+<h3 class="proj">ACME-CLOUD</h3>
+<table><thead><tr><th></th><th>Title</th><th>Type</th><th>Status</th><th>Owner</th><th>Due</th><th>Last update</th></tr></thead><tbody>
+<tr class="row-urgent"><td class="bd"><span class="badge urgent">urgent</span><span class="badge late">late</span></td><td><span class="cid">SR-ACME-CLOUD-0001</span><br>Get written landing-zone sign-off from Northwind</td><td>blocker</td><td>WAIT</td><td>Amir Haddad</td><td>2026-05-29</td><td class="upd">Verbal looks-good on the sync, but no written sign-off yet. New promised date 2026-06-04 - now past its own deadline; first cutover cannot be scheduled until it lands.</td></tr>
+<tr class="row-urgent"><td class="bd"><span class="badge urgent">urgent</span></td><td><span class="cid">SR-ACME-CLOUD-0012</span><br>Write the OrderHub cutover runbook with rollback steps</td><td>task</td><td>TODO</td><td>Sam Rivera</td><td>2026-06-20</td><td class="upd">New: Mark asked for the runbook ahead of the 20th go-live review; rollback detail is the sensitive part.</td></tr>
+<tr class="row-urgent"><td class="bd"><span class="badge urgent">urgent</span></td><td><span class="cid">SR-ACME-CLOUD-0002</span><br>Schedule and run the first region cutover</td><td>task</td><td>BLOCKED</td><td>Sam Rivera</td><td>once the landing-zone sign-off lands</td><td class="upd">Blocked on the landing-zone sign-off (0001). Per DEC-ACME-CLOUD-002 this is now a per-region cutover.</td></tr>
+<tr><td class="bd"></td><td><span class="cid">SR-ACME-CLOUD-0009</span><br>Produce UAT test plan for OrderHub</td><td>task</td><td>DOING</td><td>Sam Rivera</td><td>2026-06-12</td><td class="upd">Drafting - covers four of the five order flows; rollback checks still to add.</td></tr>
+</tbody></table>
+<h3 class="proj">BRIO-PORTAL</h3>
+<table><thead><tr><th></th><th>Title</th><th>Type</th><th>Status</th><th>Owner</th><th>Due</th><th>Last update</th></tr></thead><tbody>
+<tr class="row-urgent"><td class="bd"><span class="badge urgent">urgent</span></td><td><span class="cid">SR-BRIO-PORTAL-0031</span><br>Diagnose and fix SSO 500 on portal staging</td><td>task</td><td>TODO</td><td><span class="gap">? - assign</span></td><td>before Thu demo to Dr. Voss</td><td class="upd">SSO returns a 500 for every user on staging since this morning; demo to Dr. Voss is Thursday. Needs an owner assigned today.</td></tr>
+<tr><td class="bd"></td><td><span class="cid">SR-BRIO-PORTAL-0024</span><br>Wire appointment widget to the FHIR endpoint</td><td>task</td><td>DOING</td><td>Sam Rivera</td><td>2026-06-18</td><td class="upd">Widget renders; wiring to the FHIR appointment endpoint in progress.</td></tr>
+</tbody></table>
+
+  </div>
+  <div id="tab2" class="tab">
+<div class="day"><div class="dayhdr">2026-06-09</div>
+<div class="msg"><div class="msgtop"><span class="sender">Dr. Lena Voss</span><span class="tag">BRIO-PORTAL</span></div><div class="subj">Thursday demo - and a worry</div><div class="sum">Sponsor flags the SSO piece must be solid before Thursday or the board will fixate on it.</div></div>
+<div class="noise">+1 filtered as noise</div>
+</div>
+<div class="day"><div class="dayhdr">2026-06-08</div>
+<div class="msg"><div class="msgtop"><span class="sender">Priya Nair</span><span class="tag">ACME-CLOUD</span></div><div class="subj">Weekly status</div><div class="sum">Migration on track; OrderHub cutover still targeting the 20th. No action.</div></div>
+<div class="msg"><div class="msgtop"><span class="sender">Northwind Ops</span><span class="tag">ACME-CLOUD</span></div><div class="subj">Planned maintenance window</div><div class="sum">Vendor maintenance 2026-06-15 02:00-04:00 UTC; no overlap with the cutover.</div></div>
+<div class="noise">+2 filtered as noise</div>
+</div>
+<div class="day"><div class="dayhdr">2026-06-07</div>
+<div class="msg"><div class="msgtop"><span class="sender">Tomas Reic</span><span class="tag">BRIO-PORTAL</span></div><div class="subj">Staging refreshed</div><div class="sum">Staging refreshed with the latest portal build; ready for SSO testing.</div></div>
+<div class="noise">+1 filtered as noise</div>
+</div>
+
+  </div>
+</main>
+<script>
+  function show(n) {
+    document.getElementById('tab1').classList.toggle('active', n === 1);
+    document.getElementById('tab2').classList.toggle('active', n === 2);
+    document.getElementById('t1').classList.toggle('active', n === 1);
+    document.getElementById('t2').classList.toggle('active', n === 2);
+  }
+</script>
+</body>
+</html>

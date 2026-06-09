@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/project-card/v1.json",
+  "title": "Project Card v1",
+  "description": "The project anchor: definition, purpose, scope, status, stakeholders, and (optionally) the operational layer — timeline, budget, environments, references. One per project folder as project.json. This is a SUPERSET of the meeting-coach project-card: the core fields are identical, so a meeting-coach companion reads the same file; the operational blocks are optional additions that project-assistant uses to run the work.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "purpose",
+    "scope_summary",
+    "status",
+    "customer",
+    "stakeholders"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$",
+      "description": "Format: {customer_code}-{project_code}. No user prefix — the project-card is a shared artifact. Examples: ACME-CLOUD, STOWLINE-ETL, NRTH-PORTAL."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 10,
+      "description": "1-3 sentences: why are we doing this? What does it solve? Hard non-empty — a mechanism against empty metadata. It keeps you from forgetting why the project exists."
+    },
+    "scope_summary": {
+      "type": "object",
+      "required": ["in_scope", "out_of_scope"],
+      "additionalProperties": false,
+      "properties": {
+        "in_scope": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1,
+          "description": "3-6 bullets: what falls within scope."
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Bullets: what is explicitly out of scope. May be empty."
+        }
+      }
+    },
+    "success_criteria": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Measurable statements at the project level (NOT at action-card level). Required once status is execution, golive, aftercare, or done."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["initiation", "execution", "golive", "aftercare", "done", "paused", "cancelled"],
+      "description": "Lifecycle phase. Health (green/yellow/red) is a separate signal, not a status."
+    },
+    "health": {
+      "type": ["object", "null"],
+      "required": ["level"],
+      "additionalProperties": false,
+      "properties": {
+        "level": {"type": "string", "enum": ["green", "yellow", "red"]},
+        "since": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Since when at this level (duration signal)."},
+        "note":  {"type": ["string", "null"], "maxLength": 200}
+      }
+    },
+    "customer": {
+      "type": "object",
+      "required": ["code", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "code":     {"type": "string", "pattern": "^[A-Z]{2,10}$", "description": "Short code used in the project id."},
+        "name":     {"type": "string"},
+        "industry": {"type": ["string", "null"], "description": "Optional context, e.g. 'healthcare', 'logistics', 'public sector'."},
+        "project_lead": {
+          "type": ["string", "null"],
+          "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$",
+          "description": "Optional reference to a contact-card; may be null when there is no single point of contact."
+        },
+        "customer_project_id": {"type": ["string", "null"], "description": "The customer's own project number, if any."}
+      }
+    },
+    "stakeholders": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Key people across customer, vendor, and internal sides. When contact_id is set, the contact-card is the authoritative source — name/role here are convenience copies. This is the bridge field shared with meeting-coach.",
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "party"],
+        "additionalProperties": false,
+        "properties": {
+          "contact_id": {
+            "type": ["string", "null"],
+            "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"
+          },
+          "name": {"type": "string"},
+          "role": {"type": "string", "description": "Role on the project, e.g. 'project sponsor', 'tech lead', 'vendor PM'."},
+          "party": {"type": "string", "enum": ["customer", "vendor", "internal", "third-party"]},
+          "decision_authority": {
+            "type": ["string", "null"],
+            "enum": ["decision-maker", "approver", "consulted", "informed", null],
+            "description": "Optional RACI-style hint."
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "start_date":      {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+        "target_date":     {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Project completion target."},
+        "go_live_planned": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Production go-live date (distinct from target_date)."},
+        "actual_end":      {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+      }
+    },
+    "budget": {
+      "type": ["object", "null"],
+      "description": "Optional operational block. Omit for projects you do not track financially.",
+      "additionalProperties": false,
+      "properties": {
+        "hours_estimated": {"type": ["integer", "null"], "minimum": 0},
+        "amount":          {"type": ["number", "null"], "minimum": 0},
+        "currency":        {"type": ["string", "null"], "description": "ISO currency code, e.g. 'EUR', 'USD'."},
+        "funding_source":  {"type": ["string", "null"], "description": "Quote number or contract reference."}
+      }
+    },
+    "environments": {
+      "type": "array",
+      "description": "Optional operational block. Environments overview (dev/test/acc/prod, URLs, status). May be empty.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name":   {"type": "string"},
+          "url":    {"type": ["string", "null"]},
+          "status": {"type": ["string", "null"], "description": "Free text, e.g. 'provisioned', 'building', 'blocked on cert'."}
+        }
+      }
+    },
+    "third_parties": {
+      "type": "array",
+      "description": "Optional: other organizations involved (not you, not the customer).",
+      "items": {
+        "type": "object",
+        "required": ["code", "name", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "code":     {"type": "string"},
+          "name":     {"type": "string"},
+          "role":     {"type": "string"},
+          "contacts": {"type": "array", "items": {"type": "string", "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}}
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "maxItems": 5,
+      "description": "Short list of top project risks. May be empty.",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "additionalProperties": false,
+        "properties": {
+          "description": {"type": "string"},
+          "mitigation":  {"type": ["string", "null"]},
+          "raised":      {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+        }
+      }
+    },
+    "classification": {
+      "type": ["string", "null"],
+      "description": "Optional free-form size/track label from your own method, e.g. 'S', 'M/internal', 'L'."
+    },
+    "references": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "wiki":           {"type": ["string", "null"], "description": "Wiki page id or URL (Confluence/Notion/etc.)."},
+        "issue_epic":     {"type": ["string", "null"], "description": "Tracker epic key (Jira/Linear/GitHub)."},
+        "quote":          {"type": ["string", "null"], "description": "Path to the quote/proposal file."},
+        "contract":       {"type": ["string", "null"]},
+        "repo":           {"type": ["string", "null"], "description": "Source repository URL."},
+        "extra":          {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "reporting": {
+      "type": ["object", "null"],
+      "description": "Steering/stakeholder reporting cadence for this project. Astrid uses it to flag when a project is overdue for a report and to scope 'what changed since the last report'.",
+      "additionalProperties": false,
+      "properties": {
+        "cadence": {
+          "type": ["string", "null"],
+          "enum": ["weekly", "fortnightly", "monthly", "quarterly", "ad-hoc", "none", null],
+          "description": "How often this project is reported on. 'ad-hoc'/'none' carry no automatic due-date."
+        },
+        "audience": {"type": ["string", "null"], "description": "Who the report goes to, e.g. 'steering group', 'sponsor'."},
+        "last_reported": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date the last report was issued. Astrid updates this when it produces a steering report."},
+        "next_due": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Optional manual override of the next report date; otherwise derived from cadence + last_reported by the tooling."}
+      }
+    },
+    "action_cards_glob": {
+      "type": ["string", "null"],
+      "description": "Glob pattern to find this project's action-cards, e.g. 'cards/AB-ACME-CLOUD-*.json'."
+    },
+    "meetings_glob": {
+      "type": ["string", "null"],
+      "description": "Glob pattern to find this project's meeting-cards, e.g. 'meetings/MTG-ACME-CLOUD-*.json'."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"enum": ["execution", "golive", "aftercare", "done"]}},
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["success_criteria"],
+        "properties": {"success_criteria": {"type": "array", "minItems": 1}}
+      }
+    }
+  ]
+}

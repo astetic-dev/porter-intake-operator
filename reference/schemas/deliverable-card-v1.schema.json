@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/deliverable-card/v1.json",
+  "title": "Deliverable Card v1",
+  "description": "One JSON per project deliverable — a tangible or measurable output the project must produce and that someone must accept. Unlike a milestone (a moment), a deliverable is a thing, with a format, an owner, a recipient, acceptance criteria, and a sign-off. Deliverables roll up to a milestone and are produced by action-cards. Lives in <project>/deliverables/.",
+  "type": "object",
+  "required": ["schema_version", "id", "project_id", "name", "owner", "status", "acceptance_criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^DLV-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{3}$",
+      "description": "Format: DLV-{customer_code}-{project_code}-{NNN}. Example: DLV-ACME-CLOUD-001."
+    },
+    "project_id": {"type": "string", "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$"},
+    "name": {"type": "string", "minLength": 3, "maxLength": 200},
+    "description": {"type": ["string", "null"]},
+    "format": {"type": ["string", "null"], "description": "What form it takes, e.g. 'document', 'signed-off runbook', 'deployed service', 'training session'."},
+    "owner": {
+      "type": "object",
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {"party": {"type": "string"}, "person": {"type": ["string", "null"]}, "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}},
+      "description": "Who is accountable for producing it."
+    },
+    "recipient": {
+      "type": ["object", "null"],
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {"party": {"type": "string"}, "person": {"type": ["string", "null"]}, "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}},
+      "description": "Who receives and accepts it (the party whose sign-off counts)."
+    },
+    "milestone_id": {
+      "type": ["string", "null"],
+      "pattern": "^MS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{3}$",
+      "description": "The milestone this deliverable rolls up to, if any."
+    },
+    "due_date": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "baseline_date": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Originally baselined due date, for variance tracking."},
+    "status": {
+      "type": "string",
+      "enum": ["not-started", "in-progress", "in-review", "accepted", "rejected"],
+      "description": "in-review=submitted to the recipient, awaiting acceptance; accepted=signed off; rejected=sent back, needs rework."
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "The pre-agreed standard the deliverable is judged against. A deliverable with no acceptance criteria cannot be objectively accepted — this is required for exactly that reason."
+    },
+    "sign_off": {
+      "type": ["object", "null"],
+      "required": ["by", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "by": {"type": "string", "description": "Who signed off (name)."},
+        "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$", "description": "Optional contact-card reference for the accepting person."},
+        "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+        "note": {"type": ["string", "null"]}
+      },
+      "description": "Set when status=accepted: the record of who accepted it and when."
+    },
+    "rejection_note": {"type": ["string", "null"], "description": "Why a deliverable was sent back. Set when status=rejected so the reason isn't lost."},
+    "action_cards": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": [],
+      "description": "Action-cards that produce this deliverable."
+    },
+    "issues": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^ISS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}$"},
+      "default": [],
+      "description": "Issue-card ids raised against this deliverable — the deliverable → issue → action chain (the issues' own action_cards[] carry the work)."
+    },
+    "updated": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date this card was last touched."},
+    "tags": {"type": "array", "items": {"type": "string"}, "default": []}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "accepted"}}, "required": ["status"]},
+      "then": {"required": ["sign_off"]}
+    }
+  ]
+}

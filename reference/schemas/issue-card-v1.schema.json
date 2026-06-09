@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-assistant.local/issue-card/v1.json",
+  "title": "Issue Card v1",
+  "description": "One JSON per logged issue — a bug, defect, incident, or open question. This is the place to track issues when there is no external tracker (Jira/GitHub), or to keep a personal record of issues that matter to you. The defining link is action_cards[]: an issue is observed and triaged here, and the WORK it requires lives as action-cards that follow from it. Severity (technical impact) and priority (business urgency) are tracked separately, per standard issue-tracking practice. Lives in <project>/issues/.",
+  "type": "object",
+  "required": ["schema_version", "id", "project_id", "title", "type", "severity", "priority", "status", "reporter", "raised"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^ISS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}$",
+      "description": "Format: ISS-{customer_code}-{project_code}-{NNNN}. Four digits — issues accumulate. Example: ISS-ACME-CLOUD-0001."
+    },
+    "project_id": {"type": "string", "pattern": "^[A-Z]{2,10}-[A-Z]{2,7}$"},
+    "title": {"type": "string", "minLength": 3, "maxLength": 200, "description": "One-line summary of the issue."},
+    "type": {
+      "type": "string",
+      "enum": ["bug", "defect", "incident", "question", "improvement"],
+      "description": "Kind of issue. bug/defect=something broken; incident=live production disruption; question=needs an answer/clarification; improvement=enhancement request. Note: a plain unit of work is NOT an issue — that is an action-card. An issue is something observed (broken, unclear, asked) from which work may follow via action_cards[]."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"],
+      "description": "TECHNICAL impact — how badly it breaks things, independent of business urgency."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "BUSINESS urgency — how soon it needs handling. Deliberately separate from severity: a high-severity crash on an unused screen can be low priority; a cosmetic typo on the homepage can be high priority."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "in-progress", "reopened", "resolved", "closed"],
+      "description": "Workflow state. resolved=a resolution has been applied and is awaiting verification; closed=verified/accepted and done."
+    },
+    "reporter": {
+      "type": "object",
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {"party": {"type": "string"}, "person": {"type": ["string", "null"]}, "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}}
+    },
+    "assignee": {
+      "type": ["object", "null"],
+      "required": ["party"],
+      "additionalProperties": false,
+      "properties": {"party": {"type": "string"}, "person": {"type": ["string", "null"]}, "contact_id": {"type": ["string", "null"], "pattern": "^CONTACT-[A-Z]{2,10}-[a-z0-9-]+$"}}
+    },
+    "environment": {"type": ["string", "null"], "description": "Where it occurs, e.g. 'Northwind test env', 'prod, OrderHub 3.2'. Most useful for bugs/incidents."},
+    "description": {"type": ["string", "null"], "description": "Full description of the issue."},
+    "steps_to_reproduce": {"type": ["array", "null"], "items": {"type": "string"}, "description": "For bugs/defects: the steps that trigger it."},
+    "expected": {"type": ["string", "null"], "description": "Expected behaviour/result."},
+    "actual": {"type": ["string", "null"], "description": "Actual behaviour/result observed."},
+    "resolution": {
+      "type": ["string", "null"],
+      "enum": ["fixed", "wont-fix", "duplicate", "cannot-reproduce", "by-design", "done", null],
+      "description": "How it was closed out. Set when status reaches resolved/closed."
+    },
+    "resolution_note": {"type": ["string", "null"]},
+    "duplicate_of": {"type": ["string", "null"], "pattern": "^ISS-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}$"},
+    "action_cards": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{2,10}-[A-Z]{2,7}-[0-9]{4}[A-Z]?$"},
+      "default": [],
+      "description": "Action-cards that follow from this issue — the work to investigate, fix, or answer it. This is the loop: log the issue here, drive the work as action-cards."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "ref"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {"type": "string", "enum": ["file", "url", "issue", "doc", "email", "meeting", "risk", "decision", "milestone", "deliverable"]},
+          "ref": {"type": "string"},
+          "note": {"type": "string"}
+        }
+      },
+      "default": [],
+      "description": "Where the issue came from (a log file, an email, an external tracker id, a meeting)."
+    },
+    "external_ref": {"type": ["string", "null"], "description": "Id in an external tracker if this is also logged there (e.g. 'PROJ-1234'). Keeps the personal card and the official ticket linked."},
+    "raised": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "resolved": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "updated": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date this card was last touched."},
+    "tags": {"type": "array", "items": {"type": "string"}, "default": []}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["resolved", "closed"]}}, "required": ["status"]},
+      "then": {"required": ["resolution"], "properties": {"resolution": {"type": "string"}}}
+    },
+    {
+      "if": {"properties": {"resolution": {"const": "duplicate"}}, "required": ["resolution"]},
+      "then": {"required": ["duplicate_of"], "properties": {"duplicate_of": {"type": "string"}}}
+    }
+  ]
+}
