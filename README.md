@@ -8,6 +8,12 @@ Porter is an **operator, not a chatbot.** It does not ask you what to do with ea
 
 ---
 
+<p align="center">
+  <a href="https://youtu.be/V3rkvH7QL6w"><img src="docs/cover.png" alt="Porter — watch the 2-minute walkthrough" width="760"></a>
+  <br>
+  <a href="https://youtu.be/V3rkvH7QL6w"><b>▶ Watch the 2-minute walkthrough</b></a> (2:00)
+</p>
+
 ## What it does, in one breath
 
 ```
